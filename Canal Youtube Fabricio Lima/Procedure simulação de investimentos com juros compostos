@@ -25,7 +25,20 @@ https://www.youtube.com/channel/UC9phxzvLT7rtw6lQBuLPLEQ/featured
 
 --Para testar a procedure criada
 
-	exec stpPlanejamento_Aposentadoria 0,1000,50,7.2
+	-- Taxa de 6,5 % anual nos exemplos abaixo
+
+	-- Investimento 0 e aportes mensais de R$ 100,00
+	exec stpPlanejamento_Aposentadoria 0,100,50,6.5
+
+	-- Investimento 0 e aportes mensais de R$ 1000,00
+	exec stpPlanejamento_Aposentadoria 0,1000,50,6.5
+ 
+	-- Investimento 10000 e aportes mensais de R$ 1000,00
+	exec stpPlanejamento_Aposentadoria 10000,1000,50,6.5
+
+	-- Investimento 100000 e aportes mensais de R$ 2000,00
+	exec stpPlanejamento_Aposentadoria 100000,2000,50,6.5
+
  
  
 ***********************************************************************************************************************************/
