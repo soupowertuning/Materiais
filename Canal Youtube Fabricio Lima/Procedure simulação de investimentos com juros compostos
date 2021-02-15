@@ -1,0 +1,113 @@
+
+/***********************************************************************************************************************************
+(C) 2021, autor: Fabricio França Lima 
+
+Blog: https://www.fabriciolima.net/blog/
+
+Feedback: fabricio.lima@powertuning.com.br
+
+Instagram: @fabriciofrancalima
+
+Twitter: @fabriciodba
+
+Facebook: https://www.facebook.com/fabricio.francalima
+
+Linkedin: https://www.linkedin.com/in/fabriciofrancalima/
+
+Consultoria: comercial@powertuning.com.br
+
+Canal sobre SQL Server no Youtube:
+https://www.youtube.com/channel/UCeBRAO_LLrUdSrOXIywjzRA
+
+Canal DBA Investidor no Youtube:
+https://www.youtube.com/channel/UC9phxzvLT7rtw6lQBuLPLEQ/featured
+
+
+--Para testar a procedure criada
+
+	exec stpPlanejamento_Aposentadoria 0,1000,50,7.2
+ 
+ 
+***********************************************************************************************************************************/
+
+IF OBJECT_ID('stpPlanejamento_Aposentadoria') IS NOT NULL
+	DROP PROCEDURE dbo.stpPlanejamento_Aposentadoria
+
+GO
+
+CREATE PROCEDURE stpPlanejamento_Aposentadoria @Aporte_Inicial NUMERIC(28,4),@Aporte_Mensal NUMERIC(28,4), @Qtd_Anos INT, @Taxa_Anual NUMERIC(28,4), @Resultado BIT = 1 
+AS
+
+SET NOCOUNT ON
+
+
+		DECLARE @Taxa_Mes NUMERIC(28,4)
+		SET @Taxa_Mes = @Taxa_Anual/12/100		
+
+		DECLARE @Result AS TABLE (	Mes INT, 
+									[Inicio do Mes] NUMERIC(28,4), 
+									[Aporte do Mes] NUMERIC(28,4),
+									[Dividendos do Mes] NUMERIC(28,4), 
+									[Final do Mes] NUMERIC(28,4),								
+									[Total Investido] NUMERIC(28,4))
+
+		DECLARE @Mes_Atual INT,@Valor_Investido NUMERIC(28,4)	,@Fim_Mes_Anterior NUMERIC(28,4)	,@Aporte_Anterior NUMERIC(28,4)	,@Dividendo_Anterior NUMERIC(28,4)
+		SET @Mes_Atual = 1
+		SET @Valor_Investido = @Aporte_Inicial+@Aporte_Mensal
+		
+		INSERT INTO @Result
+		SELECT @Mes_Atual,
+		@Aporte_Inicial [Inicio do Mes],
+		@Aporte_Mensal [Aporte do Mes],
+		(@Aporte_Inicial+@Aporte_Mensal)*(@Taxa_Mes) [Dividendos do Mes],
+		(@Aporte_Inicial+@Aporte_Mensal)*(1+@Taxa_Mes) [Final do Mes],
+		@Aporte_Inicial+@Aporte_Mensal [Total Investido]
+
+									
+		SET @Fim_Mes_Anterior = (@Aporte_Inicial+@Aporte_Mensal)*(1+@Taxa_Mes)
+		SET @Valor_Investido += @Aporte_Mensal
+			
+		SET @Mes_Atual +=1
+
+		WHILE @Mes_Atual <= @Qtd_Anos*12
+		BEGIN	
+	
+			INSERT INTO @Result
+			SELECT @Mes_Atual,
+			@Fim_Mes_Anterior [Inicio do Mes],
+			@Aporte_Mensal [Aporte do Mes], 
+			(@Fim_Mes_Anterior+@Aporte_Mensal)*@Taxa_Mes [Dividendos do Mes],
+			@Fim_Mes_Anterior + @Aporte_Mensal+ ((@Fim_Mes_Anterior+@Aporte_Mensal)*@Taxa_Mes)  [Final do Mes], 
+			@Valor_Investido [Total Investido]
+	
+
+			SET @Fim_Mes_Anterior = @Fim_Mes_Anterior + @Aporte_Mensal+ ((@Fim_Mes_Anterior+@Aporte_Mensal)*@Taxa_Mes) 
+			SET @Valor_Investido += @Aporte_Mensal
+			--SET @Dividendo_Anterior = (@Fim_Mes_Anterior+@Aporte_Mensal)*@Taxa_Mes
+
+			SET @Mes_Atual +=1
+		END
+
+		-- Para reutilizar em alguma outra rotina
+		IF OBJECT_ID('Resultado_Simulacao_Aposentadoria') IS NOT NULL
+			DROP TABLE  Resultado_Simulacao_Aposentadoria		
+	
+		SELECT *,[Final do Mes]-[Total Investido] Lucro,
+		  CASE WHEN (Mes/12) = 0 THEN '' ELSE CAST(Mes /12 AS VARCHAR) END +
+		  CASE WHEN (Mes/12) = 0 then ''
+				WHEN (Mes/12) = 1 then ' Ano '
+				ELSE ' Anos ' END+ 		
+				
+		 		 CASE WHEN CAST(Mes %12 AS VARCHAR) = 0 THEN ' ' 
+				 WHEN (Mes/12) = 0 THEN  CAST(Mes %12 AS VARCHAR)
+				 ELSE ' e ' + CAST(Mes %12 AS VARCHAR) END + 
+
+				 CASE WHEN CAST(Mes %12 AS VARCHAR) = 0 THEN ' '
+					WHEN CAST(Mes %12 AS VARCHAR) = 1 THEN ' Mes' ELSE ' Meses' END [Tempo para chegar nesse valor investido]
+		INTO Resultado_Simulacao_Aposentadoria
+		FROM @Result		
+
+		IF @Resultado = 1
+			SELECT *
+			FROM Resultado_Simulacao_Aposentadoria
+			ORDER BY Mes
