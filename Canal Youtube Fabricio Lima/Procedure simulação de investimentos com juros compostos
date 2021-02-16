@@ -54,7 +54,7 @@ AS
 SET NOCOUNT ON
 
 
-		DECLARE @Taxa_Mes NUMERIC(28,4)
+		DECLARE @Taxa_Mes NUMERIC(28,8)
 		SET @Taxa_Mes = @Taxa_Anual/12/100		
 
 		DECLARE @Result AS TABLE (	Mes INT, 
