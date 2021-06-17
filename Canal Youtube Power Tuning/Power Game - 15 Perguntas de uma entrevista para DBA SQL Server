@@ -1,0 +1,142 @@
+-- DEMOS E LINKS DA PARTE 2
+
+
+-----------------------------------------------------------  Questão 1
+SELECT current_tasks_count,runnable_tasks_count,* 
+FROM sys.dm_os_schedulers
+WHERE scheduler_id < 255
+AND status = 'VISIBLE ONLINE'
+
+
+----------------------------------------------------------- Questão 2
+https://docs.microsoft.com/en-us/sql/sql-server/editions-and-components-of-sql-server-version-15?view=sql-server-ver15
+
+
+----------------------------------------------------------- Questão 3
+-- Video mostrando uma comparação de performance mudando a collation
+https://www.youtube.com/watch?v=MFyiPUzr2ms
+
+
+----------------------------------------------------------- Questão 4
+CREATE DATABASE [TesteCollatioin]
+ CONTAINMENT = NONE
+ ON  PRIMARY 
+( NAME = N'TesteCollatioin', FILENAME = N'C:\Program Files\Microsoft SQL Server\MSSQL15.MSSQLSERVER\MSSQL\DATA\TesteCollatioin.mdf' , SIZE = 8192KB , FILEGROWTH = 65536KB )
+ LOG ON 
+( NAME = N'TesteCollatioin_log', FILENAME = N'C:\Program Files\Microsoft SQL Server\MSSQL15.MSSQLSERVER\MSSQL\DATA\TesteCollatioin_log.ldf' , SIZE = 8192KB , FILEGROWTH = 65536KB )
+ COLLATE Latin1_General_CS_AI
+GO
+
+USE [TesteCollatioin]
+
+
+CREATE table Cliente(Cod int identity, Nome varchar(50))
+
+insert into Cliente
+select 'Fabricio Lima'
+
+Create table #Cliente2(Cod int identity, Nome varchar(50))
+
+insert into #Cliente2
+select 'Fabricio Lima'
+
+select *
+from #Cliente2 A
+join Cliente B on A.Nome = B.Nome
+
+--	Recebemos o erro:
+--	Msg 468, Level 16, State 9, Line 3
+--	Cannot resolve the collation conflict between "Latin1_General_CI_AS" and "Latin1_General_CI_AI" in the equal to operation.
+
+SELECT *
+FROM #Cliente2 A
+JOIN Cliente B ON A.Nome COLLATE Latin1_General_CI_AI = B.Nome
+
+
+--------------------------------- Mudar a collation da base resolve?
+--Verify the collation setting.  
+SELECT name, collation_name  
+FROM sys.databases  
+
+USE master
+-- Set to single-user mode
+ALTER DATABASE [TesteCollatioin]
+SET SINGLE_USER WITH ROLLBACK IMMEDIATE
+GO
+  
+-- change collation
+ALTER DATABASE [TesteCollatioin]  
+COLLATE Latin1_General_CS_AS;  
+GO  
+-- Set to multi-user mode
+ALTER DATABASE [TesteCollatioin]
+SET MULTI_USER WITH ROLLBACK IMMEDIATE;
+GO  
+
+--Verify the collation setting.  
+SELECT name, collation_name  
+FROM sys.databases  
+
+select *
+from #Cliente2 A
+join TesteCollatioin..Cliente B on A.Nome = B.Nome
+
+
+--Alterando a collation da coluna
+ALTER TABLE TesteCollatioin..Cliente
+ALTER COLUMN Nome VARCHAR(50) COLLATE Latin1_General_CS_AS
+
+select *
+from #Cliente2 A
+join TesteCollatioin..Cliente B on A.Nome = B.Nome
+
+
+DROP DATABASE [TesteCollatioin]
+
+-----------------------------------------------------------questão 5
+
+https://luizlima.net/instant-file-initialization-x-tempo-restore/
+
+
+----------------------------------------------------------- questao 6
+https://www.brentozar.com/blitz/tempdb-data-files/
+
+https://www.sqlskills.com/blogs/paul/inside-the-storage-engine-gam-sgam-pfs-and-other-allocation-maps/
+
+--Slides interessantes (slide 23)
+https://www.slideshare.net/IderaSoftware/geek-sync-understanding-and-monitoring-tempdb
+
+
+----------------------------------------------------------- questões 9 e 10
+https://luizlima.net/dicas-de-tuning-como-o-paralelismo-pode-afetar-o-cpu-time/
+
+
+-----------------------------------------------------------questão 12
+https://luizlima.net/instant-file-initialization-x-tempo-restore/
+
+-----------------------------------------------------------questao 15
+-- http://sqlmagu.blogspot.com/2013/05/optimize-for-ad-hoc-workloads-sql.html
+
+
+
+
+
+
+-----------------------------------------------------------DEMOS E LINKS DA PARTE 2
+
+CREATE TABLE Salario(
+Nome VARCHAR(100),
+Salário NUMERIC(15,2))
+
+--validar com o login
+SELECT * FROM Salario
+
+
+
+GRANT SELECT ON Salario TO fabricio
+
+DENY SELECT ON Salario TO fabricio
+
+REVOKE SELECT ON Salario TO fabricio
+
+
