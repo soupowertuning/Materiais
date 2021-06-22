@@ -1,0 +1,211 @@
+
+----------------------------------------------------------- DEMOS E LINKS DA PARTE 2
+-- Não assistiu a parte 1 dessa live?
+https://www.youtube.com/watch?v=9lPtPjpDpBE&t=11s
+
+-- questao 1 e 3
+
+ Sempre que possível utilize logins de Windows, pois eles são gerenciados a nível de AD e com as políticas de segurança do AD.
+
+ Também podemos criar um login para um grupo do AD e controlar o acesso de várias pessoas ao mesmo tempo. Isso é muito utilizado no dia a dia como DBA para facilitar o controle de acesso a setores da TI ou Empresa.
+
+ Enforce password policy: Força as senhas dos logins para serem criadas com uma complexidade mínima. Ex: Pelo menos 8 caracteres e três tipos de caracteres(número, maiúsculo, minúsculo e etc).
+
+ Enforce password expiration: Se for login de Windows, o AD já controla a expiração da senha pelo windows. Se for um login de SQL, o sql controla essa troca de senha. Dificilmente em uma aplicação ficamos mudando a senha do usuário. Dessa forma essa opção não é muito utilizada, bastando criar uma senha forte para os usuários.
+
+ User must change password at next login: Também só é válido para login de SQL. Quando habilita essa opção o sql pede para o usuário trocar a senha na próxima vez que for logar no SQL. Como normalmente o DBA que cria e gerencia todas as senhas de acesso ao banco de dados, na prática essa opção também não é muito utilizada.
+
+ Default Database –> Nessa opção escolhemos qual database o usuário vai se conectar automaticamente quando logar no SQL Server. Se um usuário só acessa uma base de dados, vale a pena colocar essa base como default para o login dele no SQL Server.
+
+
+Leitura Complementar: 
+
+ http://msdn.microsoft.com/en-us/library/ms161959.aspx
+
+ --questao 2
+
+ https://www.mssqltips.com/sqlservertip/6493/sql-server-tempdb-tutorial/
+
+ --questao 4 (database mail)
+
+ https://www.mssqltips.com/sqlservertip/2578/setup-sql-server-database-mail-to-use-a-gmail-hotmail-or-outlook-account/
+
+ -- questao 5 (server roles)
+
+ Ao criar um login deve ser definido quais acessos ele terá a nível de servidor e o SQL já disponibiliza algumas roles (server roles) para facilitar a liberação do acesso).
+
+ Segue uma breve descrição das Server Roles:
+
+ Sysadmin: Permissão total no SQL Server.
+
+ Public: Todo login no SQL pertence a role public. É uma role default que permite que o login criado se connect nas databases, dentre outras coisas, contudo, o login não consegue fazer nada na base de dados se não for dado acessos específicos.
+
+ Bulkadmin: Essa permissão permite a importação de arquivos externos para o SQL Server (txt, excel e etc). Além de ter essa permissão o usuário vai precisar de permissão para inserir em alguma tabela do banco de dados.
+
+ Dbcreator:  Permissão para criar databases. Pode ser usada para um DBA junior para não precisar dar a permissão de sysadmin para ele.
+
+ Diskadmin: Muito pouco usada. Server para dar permissão a backup devices, que nem são usados mais no SQL Server.
+
+ Processadmin: Tem permissão de alterar qualquer conexão no SQL Server, ou seja, pode dar um KILL nas conexões do SQL Server.
+
+ SecurityAdmin: Controla a segurança do SQL Server. Pode gerenciar outros logins e manipular outras permissões no SQL Server com exceção da role sysadmin.
+
+ Serveradmin: Gerencia as configurações do SQL Server. Pode até executar o commando SHUTDOWMN do SQL Serve.
+
+ Setupadmin: Controla Linked Servers.
+
+ 
+Leitura Complementar: 
+
+ http://msdn.microsoft.com/en-us/library/ms161959.aspx
+
+
+
+ --questao 6
+
+ Quando se cria um login você já pode mapear os acessos que esse login terá em bases de dados específicas incluindo esse login em alguma Database Role.
+
+ Segue uma breve descrição das Databases Roles:
+
+ db_owner: Pode fazer qualquer coisa dentro de uma database.
+
+ db_securityadmin: Gerência a permissão dos objetos dessa database.
+
+ db_accessadmin: Pode liberar ou bloquear o acesso de um login a uma database.
+
+ db_backupoperator: Permite realizer backup dessa database.
+
+ db_ddladmin: Pode dar um create, drop e alterar qualquer objeto dessa database.
+
+ db_datareader: Permite acesso de SELECT em todas as tabelas, views e functions dessa database.
+
+ db_datawriter: Permite acesso de INSERT, UPDATE e DELETE em todas as tabelas e views dessa database.
+
+ db_denydatareader: Realiza um DENY de select em todas as tabelas, funções e views da database.
+
+ db_denydatawriter: Realiza um DENY de INSERT, UPDATE e DELETE em todas as tabelas e views dessa database.
+
+
+Leitura Complementar:
+
+ http://www.mssqltips.com/sqlservertip/1900/understanding-sql-server-fixed-database-roles/
+
+ -- questao 7, 8, 9, 10, 11, 12
+ https://www.mssqltips.com/sqlservertip/2894/understanding-grant-deny-and-revoke-in-sql-server/
+ 
+USE PowerGame
+
+CREATE TABLE Salario(
+Nome VARCHAR(100),
+Salário NUMERIC(15,2))
+
+SELECT * FROM Salario
+
+CREATE LOGIN [fabricio] WITH PASSWORD=N'senhadificil'
+GO
+
+USE [PowerGame]
+GO
+CREATE USER [fabricio] FOR LOGIN [fabricio]
+GO
+USE [PowerGame]
+GO
+ALTER ROLE [db_datareader] ADD MEMBER [fabricio]
+GO
+
+--Logar com o usuario Fabrício para validar com o login
+SELECT * FROM Salario
+
+DENY SELECT ON Salario TO fabricio
+
+REVOKE SELECT ON Salario TO fabricio
+
+-- questao 13
+https://www.dirceuresende.com/blog/como-identificar-a-porta-utilizada-pela-instancia-do-sql-server/
+
+-- questao 14
+https://www.tiagoneves.net/blog/habilitando-dac-sql-server/
+
+SELECT parent_node_id,scheduler_id,status,is_online
+FROM    sys.dm_os_schedulers 
+
+--Script para descobrir em qual porta o SQL Server esta sendo executado.
+SELECT  e.name ,
+        e.endpoint_id ,
+        e.principal_id ,
+        e.protocol ,
+        e.protocol_desc ,
+        ec.local_net_address ,
+        ec.local_tcp_port ,
+        e.[type] ,
+        e.type_desc ,
+        e.[state] ,
+        e.state_desc ,
+        e.is_admin_endpoint
+FROM    sys.endpoints e
+        LEFT OUTER JOIN sys.dm_exec_connections ec ON ec.endpoint_id = e.endpoint_id
+GROUP BY e.name ,
+        e.endpoint_id ,
+        e.principal_id ,
+        e.protocol ,
+        e.protocol_desc ,
+        ec.local_net_address ,
+        ec.local_tcp_port ,
+        e.[type] ,
+        e.type_desc ,
+        e.[state] ,
+        e.state_desc ,
+        e.is_admin_endpoint 
+
+----- 15 
+https://www.dirceuresende.com/blog/identificando-e-resolvendo-problemas-de-usuarios-orfaos-no-sql-server-com-a-sp_change_users_login/
+
+
+
+
+SELECT *
+FROM sys.sysprocesses
+WHERE loginame = 'fabricio'
+
+KILL 72
+DROP LOGIN fabricio
+
+
+CREATE LOGIN [fabricio] WITH PASSWORD=N'senhadificil'
+GO
+
+
+USE PowerGame
+EXEC sp_change_users_login 'Report'
+
+SELECT
+    A.name AS UserName,
+    A.[sid] AS UserSID
+FROM
+    sys.database_principals A WITH(NOLOCK)
+    LEFT JOIN sys.sql_logins B WITH(NOLOCK) ON A.[sid] = B.[sid]
+    JOIN sys.server_principals C WITH(NOLOCK) ON A.[name] COLLATE SQL_Latin1_General_CP1_CI_AI = C.[name] COLLATE SQL_Latin1_General_CP1_CI_AI
+WHERE
+    A.principal_id > 4
+    AND B.[sid] IS NULL
+    AND A.is_fixed_role = 0
+    AND C.is_fixed_role = 0
+    AND A.name NOT LIKE '##MS_%'
+    AND A.[type_desc] = 'SQL_USER'
+    AND C.[type_desc] = 'SQL_LOGIN'
+    AND A.name NOT IN ('sa')
+    AND A.authentication_type <> 0 -- NONE
+ORDER BY
+    A.name
+
+
+USE PowerGame
+EXEC sp_change_users_login 'Auto_Fix', 'fabricio' -- Isso irá associar o Login 'Usuario_Orfao' ao usuário 'Usuario_Orfao'
+GO
+
+-- nome do login diferente do nome do usuário
+USE PowerGame
+EXEC sp_change_users_login 
+    'Update_One', 
+    '',  -- Usuário
+    ''   -- Login
